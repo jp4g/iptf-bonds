@@ -1,0 +1,17 @@
+{
+  "name": "@iptf/api",
+  "version": "1.0.0",
+  "description": "Order flow service for IPTF Private Bonds",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

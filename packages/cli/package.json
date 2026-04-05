@@ -1,0 +1,24 @@
+{
+  "name": "@iptf/cli",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/jest": "catalog:",
+    "@aztec/aztec.js": "catalog:",
+    "@aztec/accounts": "catalog:",
+    "@aztec/ethereum": "catalog:",
+    "@aztec/noir-contracts.js": "catalog:",
+    "@aztec/pxe": "catalog:",
+    "@aztec/wallets": "catalog:",
+    "@aztec/stdlib": "catalog:",
+    "@iptf/contracts": "workspace:*",
+    "dotenv": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "catalog:"
+  },
+  "scripts": {
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@iptf/bonds",
+  "private": true,
+  "scripts": {
+    "postinstall": "bun run scripts/token.ts",
+    "test": "bun test"
+  },
+  "config": {
+    "aztecVersion": "4.2.0-aztecnr-rc.2",
+    "aztecStandardsVersion": "dev"
+  }
+}

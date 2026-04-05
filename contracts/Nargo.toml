@@ -1,2 +1,0 @@
-[workspace]
-members = ["private_bonds", "stablecoin", "dvp", "tests"]
