@@ -4,32 +4,47 @@ use aztec::macros::aztec;
 pub contract PrivateBonds {
     use aztec::{
         macros::{functions::{authorize_once, external, initializer, only_self}, storage::storage},
-        protocol::address::AztecAddress,
+        oracle::get_contract_instance::get_contract_instance,
+        protocol::{
+            address::AztecAddress,
+            contract_class_id::ContractClassId,
+            contract_instance::ContractInstance,
+            traits::FromField,
+        },
         state_vars::{Map, Owned, PublicImmutable, PublicMutable},
     };
+    use aztec::macros::events::event;
     use aztec::messages::message_delivery::MessageDelivery;
     use aztec::test::helpers::test_environment::TestEnvironment;
     use balance_set::BalanceSet;
     use token_contract::Token;
 
+    #[event]
+    struct TransferEvent {
+        from: AztecAddress,
+        to: AztecAddress,
+        amount: u128,
+    }
+
     #[storage]
     struct Storage<Context> {
-        owner: PublicMutable<AztecAddress, Context>,
+        issuer: PublicMutable<AztecAddress, Context>,
         private_balances: Owned<BalanceSet<Context>, Context>,
         whitelist: Map<AztecAddress, PublicMutable<bool, Context>, Context>,
         total_supply: PublicMutable<u128, Context>,
         maturity_date: PublicMutable<u64, Context>,
         payment_token: PublicImmutable<AztecAddress, Context>,
+        trusted_escrow_class_id: PublicImmutable<Field, Context>,
+        name: PublicImmutable<Field, Context>,
     }
 
     #[initializer]
     #[external("private")]
-    fn constructor(total_supply: u128, maturity: u64, payment_token: AztecAddress) {
+    fn constructor(name: Field, total_supply: u128, maturity: u64, payment_token: AztecAddress, trusted_escrow_class_id: Field) {
         let issuer = self.msg_sender();
 
         // Set public state via enqueued calls
-
-        self.enqueue_self._set_immutables(issuer, total_supply, maturity, payment_token);
+        self.enqueue_self._set_immutables(issuer, name, total_supply, maturity, payment_token, trusted_escrow_class_id);
 
         // Mint entire supply to issuer's private balance
         // This is the ONLY minting that ever happens
@@ -41,23 +56,27 @@ pub contract PrivateBonds {
     #[external("public")]
     #[only_self]
     fn _set_immutables(
-        owner: AztecAddress,
+        issuer: AztecAddress,
+        name: Field,
         total_supply: u128,
         maturity: u64,
         payment_token: AztecAddress,
+        trusted_escrow_class_id: Field,
     ) {
-        self.storage.owner.write(owner);
+        self.storage.issuer.write(issuer);
         self.storage.total_supply.write(total_supply);
         self.storage.maturity_date.write(maturity);
         self.storage.payment_token.initialize(payment_token);
+        self.storage.trusted_escrow_class_id.initialize(trusted_escrow_class_id);
+        self.storage.name.initialize(name);
     }
 
     #[external("public")]
     fn add_to_whitelist(investor: AztecAddress) {
         assert_eq(
             self.msg_sender(),
-            self.storage.owner.read(),
-            "Only owner can manage whitelist",
+            self.storage.issuer.read(),
+            "Only issuer can manage whitelist",
         );
         assert(!self.storage.whitelist.at(investor).read(), "Investor is already listed");
 
@@ -68,8 +87,8 @@ pub contract PrivateBonds {
     fn ban_from_whitelist(investor: AztecAddress) {
         assert_eq(
             self.msg_sender(),
-            self.storage.owner.read(),
-            "Only owner can manage whitelist",
+            self.storage.issuer.read(),
+            "Only issuer can manage whitelist",
         );
         assert(self.storage.whitelist.at(investor).read(), "Investor is already unlisted");
 
@@ -79,7 +98,7 @@ pub contract PrivateBonds {
     #[external("private")]
     fn distribute_private(investor: AztecAddress, amount: u128) {
         // Only issuer can distribute
-        self.enqueue_self._assert_is_owner(self.msg_sender());
+        self.enqueue_self._assert_is_issuer(self.msg_sender());
 
         // Check investor is whitelisted
         self.enqueue_self._assert_is_whitelisted(investor);
@@ -92,6 +111,13 @@ pub contract PrivateBonds {
         self.storage.private_balances.at(investor).add(amount).deliver(
             MessageDelivery.ONCHAIN_CONSTRAINED,
         );
+
+        // TODO: emit TransferEvent once issuer is DelayedPublicMutable (readable in private)
+        // let event_recipient = self.storage.issuer.read();
+        // self.emit(TransferEvent { from: issuer, to: investor, amount }).deliver_to(
+        //     event_recipient,
+        //     MessageDelivery.ONCHAIN_CONSTRAINED,
+        // );
     }
 
     #[external("private")]
@@ -99,7 +125,6 @@ pub contract PrivateBonds {
         let sender = self.msg_sender();
 
         // Check both sender and recipient are whitelisted
-        // Could be made into one call
         self.enqueue_self._assert_is_whitelisted(sender);
         self.enqueue_self._assert_is_whitelisted(to);
 
@@ -112,15 +137,45 @@ pub contract PrivateBonds {
         self.storage.private_balances.at(to).add(amount).deliver(
             MessageDelivery.ONCHAIN_CONSTRAINED,
         );
+
+        // TODO: emit TransferEvent once issuer is DelayedPublicMutable (readable in private)
+        // let issuer = self.storage.issuer.read();
+        // self.emit(TransferEvent { from: sender, to, amount }).deliver_to(
+        //     issuer,
+        //     MessageDelivery.ONCHAIN_CONSTRAINED,
+        // );
     }
 
     /// Delegated transfer for DvP and other authorized scenarios.
     /// Requires `from` to have created an authwit for this exact call.
+    /// Trusted escrow contracts (verified by class ID) skip the whitelist check.
     #[authorize_once("from", "authwit_nonce")]
     #[external("private")]
     fn transfer_from(from: AztecAddress, to: AztecAddress, amount: u128, authwit_nonce: Field) {
-        self.enqueue_self._assert_is_whitelisted(from);
-        self.enqueue_self._assert_is_whitelisted(to);
+        // Check if the caller (msg_sender) is a trusted escrow contract by class ID.
+        // In DvP flows, the escrow contract calls transfer_from, so msg_sender is the escrow.
+        // If the caller is a trusted escrow, skip whitelist checks for from/to since
+        // the escrow enforces its own authorization via authwit.
+        let stored_class_id: Field = self.storage.trusted_escrow_class_id.read();
+        let caller = self.msg_sender();
+
+        let mut caller_is_trusted_escrow = false;
+        if stored_class_id != 0 {
+            let caller_instance = get_contract_instance(caller);
+            let verified = ContractInstance {
+                salt: caller_instance.salt,
+                deployer: caller_instance.deployer,
+                contract_class_id: ContractClassId::from_field(stored_class_id),
+                initialization_hash: caller_instance.initialization_hash,
+                public_keys: caller_instance.public_keys,
+            };
+            caller_is_trusted_escrow = verified.to_address() == caller;
+        }
+
+        if !caller_is_trusted_escrow {
+            self.enqueue_self._assert_is_whitelisted(from);
+            self.enqueue_self._assert_is_whitelisted(to);
+        }
 
         self.storage.private_balances.at(from).sub(amount).deliver(
             MessageDelivery.ONCHAIN_CONSTRAINED,
@@ -128,6 +183,13 @@ pub contract PrivateBonds {
         self.storage.private_balances.at(to).add(amount).deliver(
             MessageDelivery.ONCHAIN_CONSTRAINED,
         );
+
+        // TODO: emit TransferEvent once issuer is DelayedPublicMutable (readable in private)
+        // let issuer = self.storage.issuer.read();
+        // self.emit(TransferEvent { from, to, amount }).deliver_to(
+        //     issuer,
+        //     MessageDelivery.ONCHAIN_CONSTRAINED,
+        // );
     }
 
     /// Redeem bonds at maturity. Burns bonds and pays out stablecoins 1:1 from
@@ -168,15 +230,16 @@ pub contract PrivateBonds {
             ));
     }
 
-    #[external("public")]
-    fn transfer_ownership(new_owner: AztecAddress) {
-        assert_eq(
-            self.msg_sender(),
-            self.storage.owner.read(),
-            "Only current owner can transfer ownership",
-        );
-        self.storage.owner.write(new_owner);
-    }
+    // TODO: re-enable once issuer is DelayedPublicMutable
+    // #[external("public")]
+    // fn transfer_ownership(new_issuer: AztecAddress) {
+    //     assert_eq(
+    //         self.msg_sender(),
+    //         self.storage.issuer.read(),
+    //         "Only current issuer can transfer ownership",
+    //     );
+    //     self.storage.issuer.write(new_issuer);
+    // }
 
     #[external("utility")]
     unconstrained fn private_balance_of(owner: AztecAddress) -> pub u128 {
@@ -194,14 +257,19 @@ pub contract PrivateBonds {
     }
 
     #[external("utility")]
+    unconstrained fn get_name() -> pub Field {
+        self.storage.name.read()
+    }
+
+    #[external("utility")]
     unconstrained fn is_whitelisted(address: AztecAddress) -> pub bool {
         self.storage.whitelist.at(address).read()
     }
 
     #[external("public")]
     #[only_self]
-    fn _assert_is_owner(address: AztecAddress) {
-        assert_eq(address, self.storage.owner.read(), "Only the Issuer can perform this action");
+    fn _assert_is_issuer(address: AztecAddress) {
+        assert_eq(address, self.storage.issuer.read(), "Only the Issuer can perform this action");
     }
 
     #[external("public")]
@@ -225,7 +293,7 @@ pub contract PrivateBonds {
 
         let bond_addr = env.deploy("PrivateBonds").with_private_initializer(
             issuer,
-            PrivateBonds::interface().constructor(1_000_000, 0, AztecAddress::zero()),
+            PrivateBonds::interface().constructor(0, 1_000_000, 0, AztecAddress::zero(), 0),
         );
 
         let balance: u128 =

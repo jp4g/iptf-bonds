@@ -5,6 +5,7 @@ import type {
     SendInteractionOptions,
     SimulateInteractionOptions,
 } from "@aztec/aztec.js/contracts";
+import { getContractClassFromArtifact } from "@aztec/aztec.js/contracts";
 import { Fr } from "@aztec/aztec.js/fields";
 import { TxHash } from "@aztec/aztec.js/tx";
 import type { Wallet } from "@aztec/aztec.js/wallet";
@@ -31,16 +32,23 @@ import { type EscrowConfig } from "./constants.js";
 export async function deployBondContract(
     wallet: Wallet,
     from: AztecAddress,
+    name: string,
     totalSupply: bigint,
     maturity: bigint,
     paymentToken: AztecAddress,
+    trustedEscrowClassId?: Fr,
     opts: { send: SendInteractionOptions<InteractionWaitOptions> } = { send: { from } }
 ): Promise<{ contract: PrivateBondsContract, instance: ContractInstanceWithAddress }> {
+    const nameField = BigInt("0x" + Buffer.from(name.slice(0, 31)).toString("hex"));
+    const classId = trustedEscrowClassId ??
+        (await getContractClassFromArtifact(DvPEscrowContractArtifact)).id;
     const contractDeployment = await PrivateBondsContract.deployWithOpts(
         { wallet, method: "constructor" },
+        nameField,
         totalSupply,
         maturity,
         paymentToken,
+        classId,
     );
     const instance = await contractDeployment.getInstance();
     const { contract } = await contractDeployment.send(opts.send);

@@ -74,7 +74,7 @@ describe("PrivateBonds", () => {
 
         // Deploy bonds with stablecoin as payment token
         ({ contract: bonds, instance: bondsInstance } = await deployBondContract(
-            issuerWallet, issuerAddress, TOTAL_SUPPLY, MATURITY, stablecoin.address
+            issuerWallet, issuerAddress, "Test Bond", TOTAL_SUPPLY, MATURITY, stablecoin.address
         ));
 
         // register contracts in other wallets

@@ -90,7 +90,7 @@ describe("DvP Escrow", () => {
 
         // Deploy PrivateBonds (sell side)
         ({ contract: bonds, instance: bondsInstance } = await deployBondContract(
-            issuerWallet, issuerAddress, BOND_SUPPLY, 0n, stablecoin.address
+            issuerWallet, issuerAddress, "Test DvP Bond", BOND_SUPPLY, 0n, stablecoin.address
         ));
 
         // Register contracts across wallets
@@ -122,9 +122,8 @@ describe("DvP Escrow", () => {
             PAYMENT_AMOUNT,
         ));
 
-        // Whitelist the escrow contract address so it can hold bonds
-        await whitelistInvestor(issuerWallet, issuerAddress, bonds, escrow.address);
-        // Also whitelist buyer so they can receive bonds from escrow
+        // Escrow is trusted via class ID verification - no whitelist needed
+        // Whitelist buyer so they can receive bonds from escrow
         await whitelistInvestor(issuerWallet, issuerAddress, bonds, buyerAddress);
 
         // Verify config
