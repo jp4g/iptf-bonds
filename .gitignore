@@ -2,3 +2,4 @@ node_modules/
 target/
 ts/dest/
 *.json.bak
+.next

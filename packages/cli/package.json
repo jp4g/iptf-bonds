@@ -14,7 +14,8 @@
     "@aztec/wallets": "catalog:",
     "@aztec/stdlib": "catalog:",
     "@iptf/contracts": "workspace:*",
-    "dotenv": "catalog:"
+    "dotenv": "catalog:",
+    "@jp4g/fpc-deployer": "0.2.0"
   },
   "peerDependencies": {
     "typescript": "catalog:"

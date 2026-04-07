@@ -5,6 +5,7 @@ import { useAztecWallet } from "@/hooks/useAztecWallet";
 import { useToast } from "@/hooks/useToast";
 import { saveIssuedBond } from "@/lib/storage";
 import { decodeNameFromField } from "@/lib/bond-utils";
+import { STABLECOIN_ADDRESS } from "@/config/contracts";
 
 export function useBondContract() {
   const { wallet, address } = useAztecWallet();
@@ -17,6 +18,9 @@ export function useBondContract() {
       const { AztecAddress } = await import("@aztec/aztec.js/addresses");
       const { deployBondContract } = await import("@iptf/contracts/contract");
 
+      if (!STABLECOIN_ADDRESS) throw new Error("NEXT_PUBLIC_STABLECOIN_ADDRESS not configured");
+      const paymentToken = AztecAddress.fromString(STABLECOIN_ADDRESS);
+
       const from = AztecAddress.fromString(address);
       const { contract } = await deployBondContract(
         wallet,
@@ -24,7 +28,7 @@ export function useBondContract() {
         name,
         totalSupply,
         maturityDate,
-        AztecAddress.zero()
+        paymentToken
       );
 
       saveIssuedBond({

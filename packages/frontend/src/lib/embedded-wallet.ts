@@ -67,7 +67,7 @@ export class EmbeddedBondWallet extends BaseWallet {
     config.dataDirectory = 'aztec-iptf-bonds';
     const pxe = await createPXE(aztecNode, config, {});
 
-    // Register sponsored FPC — use env var if set, otherwise derive the canonical address
+    // Register sponsored FPC from env
     const { SponsoredFPCContractArtifact } = await import(
       "@aztec/noir-contracts.js/SponsoredFPC"
     );
@@ -76,15 +76,14 @@ export class EmbeddedBondWallet extends BaseWallet {
     );
     const { SPONSORED_FPC_SALT } = await import("@aztec/constants");
 
+    const envAddr = process.env.NEXT_PUBLIC_SPONSORED_FPC_ADDRESS;
+    if (!envAddr) throw new Error("NEXT_PUBLIC_SPONSORED_FPC_ADDRESS not configured");
+    const fpcAztecAddr = AztecAddress.fromString(envAddr);
+
     const fpcInstance = await getContractInstanceFromInstantiationParams(
       SponsoredFPCContractArtifact,
       { salt: new Fr(SPONSORED_FPC_SALT) }
     );
-
-    const envAddr = process.env.NEXT_PUBLIC_SPONSORED_FPC_ADDRESS;
-    const fpcAztecAddr = envAddr
-      ? AztecAddress.fromString(envAddr)
-      : fpcInstance.address;
 
     const registered = await pxe.getContracts();
     if (!registered.some(a => a.equals(fpcAztecAddr))) {
