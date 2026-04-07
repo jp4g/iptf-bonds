@@ -33,7 +33,7 @@ export function getTimeRemaining(
 }
 
 // USDC formatting (6 decimals)
-const TOKEN_DECIMALS = 6;
+export const TOKEN_DECIMALS = 6;
 const TOKEN_SCALE = 10n ** BigInt(TOKEN_DECIMALS);
 
 export function formatUsdcAmount(raw: string | bigint): string {

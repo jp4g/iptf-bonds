@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import { useTokenContract } from "@/hooks/useTokenContract";
 import { useToast } from "@/hooks/useToast";
-import { formatUsdcAmount } from "@/lib/bond-utils";
+import { formatUsdcAmount, TOKEN_DECIMALS } from "@/lib/bond-utils";
 
 const MAX_MINT = 100_000_000;
 

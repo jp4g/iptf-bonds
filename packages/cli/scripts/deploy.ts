@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -227,13 +227,30 @@ const main = async () => {
     console.log(`Deployments written to ${deploymentsPath}`);
 
     const envLocalPath = resolve(__dirname, "../../frontend/.env.local");
-    const envContent = [
-        `NEXT_PUBLIC_AZTEC_NODE_URL=${L2_NODE_URL}`,
-        `NEXT_PUBLIC_SPONSORED_FPC_ADDRESS=${fpcAddress}`,
-        `NEXT_PUBLIC_STABLECOIN_ADDRESS=${stablecoin.address}`,
-        `NEXT_PUBLIC_STABLECOIN_MINTER=${JSON.stringify(minterCredentials)}`,
-    ].join("\n") + "\n";
-    writeFileSync(envLocalPath, envContent);
+    const updates: Record<string, string> = {
+        NEXT_PUBLIC_AZTEC_NODE_URL: L2_NODE_URL,
+        NEXT_PUBLIC_SPONSORED_FPC_ADDRESS: fpcAddress,
+        NEXT_PUBLIC_STABLECOIN_ADDRESS: stablecoin.address.toString(),
+        NEXT_PUBLIC_STABLECOIN_MINTER: JSON.stringify(minterCredentials),
+    };
+    let existing = "";
+    try { existing = readFileSync(envLocalPath, "utf-8"); } catch {}
+    const lines = existing.split("\n").filter(Boolean);
+    const keysWritten = new Set<string>();
+    const updated = lines.map((line) => {
+        const eqIdx = line.indexOf("=");
+        if (eqIdx === -1) return line;
+        const key = line.slice(0, eqIdx);
+        if (key in updates) {
+            keysWritten.add(key);
+            return `${key}=${updates[key]}`;
+        }
+        return line;
+    });
+    for (const [key, value] of Object.entries(updates)) {
+        if (!keysWritten.has(key)) updated.push(`${key}=${value}`);
+    }
+    writeFileSync(envLocalPath, updated.join("\n") + "\n");
     console.log(`Frontend env written to ${envLocalPath}`);
 };
 
