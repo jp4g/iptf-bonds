@@ -5,6 +5,7 @@ import { createAztecNodeClient } from "@aztec/aztec.js/node";
 import { Fr } from "@aztec/aztec.js/fields";
 import { GrumpkinScalar } from "@aztec/foundation/curves/grumpkin";
 import { EmbeddedWallet } from "@aztec/wallets/embedded";
+import { getInitialTestAccountsData } from "@aztec/accounts/testing";
 import { bootstrapAztecFPC, deployAztecFPC, fundAztecFPC } from "@jp4g/fpc-deployer";
 import { deployTokenContract } from "@iptf/contracts/contract";
 import { TOKEN_METADATA } from "@iptf/contracts/constants";
@@ -61,6 +62,39 @@ const main = async () => {
         amount: 1000n * 10n ** 18n,
     });
     console.log(`FPC funded — balance: ${fundResult.balance}`);
+
+    // =========================================================================
+    // 3.5. Advance chain on local net (2 dummy txs for L1→L2 message availability)
+    // =========================================================================
+    if (!(await isTestnet(node))) {
+        console.log("Local network detected — advancing chain with 2 dummy txs...");
+        const [testAccountData] = await getInitialTestAccountsData();
+        const tempWallet = await EmbeddedWallet.create(node);
+        const tempAccount = await tempWallet.createSchnorrAccount(
+            testAccountData.secret,
+            testAccountData.salt,
+            testAccountData.signingKey
+        );
+        const { contract: tempToken } = await deployTokenContract(
+            tempWallet,
+            tempAccount.address,
+            { name: "Dummy", symbol: "DUM", decimals: 0 },
+            { send: { from: tempAccount.address } }
+        );
+        // Two mints = two blocks
+        await tempToken
+            .withWallet(tempWallet)
+            .methods.mint_to_private(tempAccount.address, 1n)
+            .send({ from: tempAccount.address })
+            .wait();
+        console.log("Dummy tx 1/2 complete");
+        await tempToken
+            .withWallet(tempWallet)
+            .methods.mint_to_private(tempAccount.address, 1n)
+            .send({ from: tempAccount.address })
+            .wait();
+        console.log("Dummy tx 2/2 complete — chain advanced");
+    }
 
     // =========================================================================
     // 4. Create minter account using FPC for fees
