@@ -1,0 +1,44 @@
+"use client";
+
+import { useState } from "react";
+import { useAztecWallet } from "@/hooks/useAztecWallet";
+import { truncateAddress } from "@/lib/bond-utils";
+import ConnectModal from "./ConnectModal";
+
+const STATUS_DOT: Record<string, string> = {
+  disconnected: "bg-neutral-400",
+  connecting: "bg-orange-400 animate-pulse",
+  connected: "bg-green-500",
+  no_account: "bg-amber-400",
+  creating: "bg-orange-400 animate-pulse",
+  error: "bg-red-500",
+};
+
+const STATUS_LABEL: Record<string, (addr: string | null) => string> = {
+  disconnected: () => "Connect Wallet",
+  connecting: () => "Connecting...",
+  connected: (addr) => (addr ? truncateAddress(addr) : "Connected"),
+  no_account: () => "No Account",
+  creating: () => "Creating...",
+  error: () => "Error",
+};
+
+export default function WalletButton() {
+  const { status, address } = useAztecWallet();
+  const [modalOpen, setModalOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setModalOpen(true)}
+        className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
+      >
+        <div className={`w-2 h-2 rounded-full ${STATUS_DOT[status]}`} />
+        <span className="text-xs font-medium text-neutral-600">
+          {STATUS_LABEL[status](address)}
+        </span>
+      </button>
+      {modalOpen && <ConnectModal onClose={() => setModalOpen(false)} />}
+    </>
+  );
+}

@@ -19,20 +19,7 @@ const main = async () => {
     const { wallet, issuerAddress } = await getIPTFAccounts(node, pxeConfig);
     const opts = await getTestnetSendWaitOptions(node, wallet, issuerAddress);
 
-    // deploy bond contract (issuer gets full supply in private balance)
-    const maturity = BigInt(Math.floor(Date.now() / 1000)) + MATURITY_SECONDS;
-    console.log("Deploying PrivateBonds contract...");
-    const { contract: bonds } = await deployBondContract(
-        wallet,
-        issuerAddress,
-        BOND_SUPPLY,
-        maturity,
-        undefined, // auto-compute DvP escrow class ID
-        opts
-    );
-    console.log(`PrivateBonds deployed: ${bonds.address}`);
-
-    // deploy stablecoin (payment token)
+    // deploy stablecoin first (needed as payment_token for bonds)
     console.log("Deploying stablecoin Token contract...");
     const { contract: stablecoin } = await deployTokenContract(
         wallet,
@@ -41,6 +28,21 @@ const main = async () => {
         opts
     );
     console.log(`Stablecoin deployed: ${stablecoin.address}`);
+
+    // deploy bond contract (issuer gets full supply in private balance)
+    const maturity = BigInt(Math.floor(Date.now() / 1000)) + MATURITY_SECONDS;
+    console.log("Deploying PrivateBonds contract...");
+    const { contract: bonds } = await deployBondContract(
+        wallet,
+        issuerAddress,
+        "IPTF Bond Series 1",
+        BOND_SUPPLY,
+        maturity,
+        stablecoin.address,
+        undefined, // auto-compute DvP escrow class ID
+        opts
+    );
+    console.log(`PrivateBonds deployed: ${bonds.address}`);
 
     // persist deployments
     const deployments = {

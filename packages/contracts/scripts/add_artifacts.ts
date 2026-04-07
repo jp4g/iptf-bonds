@@ -42,9 +42,9 @@ async function main() {
       "./ts/src/artifacts/private_bonds/PrivateBonds.json"
     );
     await replaceInFile(
-      "./ts/src/artifacts/private_bonds/PrivateBonds.ts",
+      "./ts/src/artifacts/PrivateBonds.ts",
       "../../../contracts/target/private_bonds-PrivateBonds.json",
-      "./PrivateBonds.json"
+      "./private_bonds/PrivateBonds.json"
     );
 
     // Move DvPEscrow artifacts
@@ -54,9 +54,9 @@ async function main() {
       "./ts/src/artifacts/dvp_escrow/DvPEscrow.json"
     );
     await replaceInFile(
-      "./ts/src/artifacts/dvp_escrow/DvPEscrow.ts",
+      "./ts/src/artifacts/DvPEscrow.ts",
       "../../../contracts/target/dvp_escrow-DvPEscrow.json",
-      "./DvPEscrow.json"
+      "./dvp_escrow/DvPEscrow.json"
     );
 
     console.log("Artifacts moved and imports fixed successfully!");

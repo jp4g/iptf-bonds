@@ -64,11 +64,11 @@ pub contract PrivateBonds {
         trusted_escrow_class_id: Field,
     ) {
         self.storage.issuer.write(issuer);
+        self.storage.name.initialize(name);
         self.storage.total_supply.write(total_supply);
         self.storage.maturity_date.write(maturity);
         self.storage.payment_token.initialize(payment_token);
         self.storage.trusted_escrow_class_id.initialize(trusted_escrow_class_id);
-        self.storage.name.initialize(name);
     }
 
     #[external("public")]
@@ -247,6 +247,11 @@ pub contract PrivateBonds {
     }
 
     #[external("utility")]
+    unconstrained fn get_name() -> pub Field {
+        self.storage.name.read()
+    }
+
+    #[external("utility")]
     unconstrained fn get_total_supply() -> pub u128 {
         self.storage.total_supply.read()
     }
@@ -254,11 +259,6 @@ pub contract PrivateBonds {
     #[external("utility")]
     unconstrained fn get_maturity_date() -> pub u64 {
         self.storage.maturity_date.read()
-    }
-
-    #[external("utility")]
-    unconstrained fn get_name() -> pub Field {
-        self.storage.name.read()
     }
 
     #[external("utility")]

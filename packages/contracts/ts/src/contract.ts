@@ -39,7 +39,11 @@ export async function deployBondContract(
     trustedEscrowClassId?: Fr,
     opts: { send: SendInteractionOptions<InteractionWaitOptions> } = { send: { from } }
 ): Promise<{ contract: PrivateBondsContract, instance: ContractInstanceWithAddress }> {
-    const nameField = BigInt("0x" + Buffer.from(name.slice(0, 31)).toString("hex"));
+    // Encode name as a Field: convert UTF-8 bytes to a big-endian Field value (max 31 bytes)
+    const nameBytes = new TextEncoder().encode(name.slice(0, 31));
+    const padded = new Uint8Array(31);
+    padded.set(nameBytes);
+    const nameField = Fr.fromBuffer(Buffer.from([0, ...padded])); // 32 bytes: 1 zero byte + 31 name bytes
     const classId = trustedEscrowClassId ??
         (await getContractClassFromArtifact(DvPEscrowContractArtifact)).id;
     const contractDeployment = await PrivateBondsContract.deployWithOpts(
