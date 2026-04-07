@@ -28,10 +28,8 @@ pub contract PrivateBonds {
         let issuer = self.msg_sender();
 
         // Set public state via enqueued calls
-        self.enqueue_self._set_owner(issuer);
-        self.enqueue_self._set_maturity(maturity);
-        self.enqueue_self._set_total_supply(total_supply);
-        self.enqueue_self._set_payment_token(payment_token);
+
+        self.enqueue_self._set_immutables(issuer, total_supply, maturity, payment_token);
 
         // Mint entire supply to issuer's private balance
         // This is the ONLY minting that ever happens
@@ -42,25 +40,15 @@ pub contract PrivateBonds {
 
     #[external("public")]
     #[only_self]
-    fn _set_owner(owner: AztecAddress) {
+    fn _set_immutables(
+        owner: AztecAddress,
+        total_supply: u128,
+        maturity: u64,
+        payment_token: AztecAddress,
+    ) {
         self.storage.owner.write(owner);
-    }
-
-    #[external("public")]
-    #[only_self]
-    fn _set_maturity(maturity: u64) {
-        self.storage.maturity_date.write(maturity);
-    }
-
-    #[external("public")]
-    #[only_self]
-    fn _set_total_supply(total_supply: u128) {
         self.storage.total_supply.write(total_supply);
-    }
-
-    #[external("public")]
-    #[only_self]
-    fn _set_payment_token(payment_token: AztecAddress) {
+        self.storage.maturity_date.write(maturity);
         self.storage.payment_token.initialize(payment_token);
     }
 
@@ -111,6 +99,7 @@ pub contract PrivateBonds {
         let sender = self.msg_sender();
 
         // Check both sender and recipient are whitelisted
+        // Could be made into one call
         self.enqueue_self._assert_is_whitelisted(sender);
         self.enqueue_self._assert_is_whitelisted(to);
 
