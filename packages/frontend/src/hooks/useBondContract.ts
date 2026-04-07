@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useAztecWallet } from "@/hooks/useAztecWallet";
 import { useToast } from "@/hooks/useToast";
-import { saveIssuedBond } from "@/lib/storage";
+import { createIssuedBond, addToWhitelist, removeFromWhitelist } from "@/lib/api";
 import { decodeNameFromField } from "@/lib/bond-utils";
 import { STABLECOIN_ADDRESS } from "@/config/contracts";
 
@@ -31,12 +31,12 @@ export function useBondContract() {
         paymentToken
       );
 
-      saveIssuedBond({
+      await createIssuedBond({
         contractAddress: contract.address.toString(),
+        issuerAddress: address,
         name,
         totalSupply: totalSupply.toString(),
         maturityDate: maturityDate.toString(),
-        deployedAt: new Date().toISOString(),
       });
 
       return contract.address.toString();
@@ -45,7 +45,7 @@ export function useBondContract() {
   );
 
   const whitelist = useCallback(
-    async (bondAddress: string, investor: string) => {
+    async (bondAddress: string, investor: string, opts: { label?: string; bondName: string }) => {
       if (!wallet || !address) throw new Error("Wallet not connected");
 
       const { AztecAddress } = await import("@aztec/aztec.js/addresses");
@@ -58,6 +58,14 @@ export function useBondContract() {
       await bond.methods
         .add_to_whitelist(AztecAddress.fromString(investor))
         .send({ from: AztecAddress.fromString(address) });
+
+      await addToWhitelist({
+        bondAddress,
+        holderAddress: investor,
+        label: opts.label,
+        issuerAddress: address,
+        bondName: opts.bondName,
+      });
     },
     [wallet, address]
   );
@@ -76,6 +84,8 @@ export function useBondContract() {
       await bond.methods
         .ban_from_whitelist(AztecAddress.fromString(investor))
         .send({ from: AztecAddress.fromString(address) });
+
+      await removeFromWhitelist(bondAddress, investor);
     },
     [wallet, address]
   );

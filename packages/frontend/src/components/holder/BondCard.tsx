@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useBondContract } from "@/hooks/useBondContract";
 import { useToast } from "@/hooks/useToast";
 import { truncateAddress, formatMaturityDate, getTimeRemaining } from "@/lib/bond-utils";
-import type { RegisteredBond } from "@/lib/storage";
+import type { RegisteredBond } from "./HoldingsList";
 
 interface BondCardProps {
   bond: RegisteredBond;

@@ -1,22 +1,3 @@
-// Bond code encode/decode for sharing between issuer and holder
-export interface BondCode {
-  contractAddress: string;
-  issuerAddress: string;
-  bondName: string;
-}
-
-export function encodeBondCode(code: BondCode): string {
-  return btoa(JSON.stringify(code));
-}
-
-export function decodeBondCode(encoded: string): BondCode {
-  try {
-    return JSON.parse(atob(encoded)) as BondCode;
-  } catch {
-    throw new Error("Invalid bond code");
-  }
-}
-
 // Display helpers
 export function truncateAddress(address: string, prefix = 6, suffix = 4): string {
   if (address.length <= prefix + suffix + 3) return address;

@@ -1,5 +1,5 @@
 /**
- * localStorage helpers for persisting Aztec account and bond data.
+ * localStorage helpers for persisting Aztec wallet account data.
  */
 
 const ACCOUNTS_KEY = "iptf-bonds-aztec-accounts";
@@ -59,62 +59,4 @@ export function clearAllStoredData() {
   localStorage.removeItem(ACCOUNTS_KEY);
   localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
   localStorage.removeItem(CHAIN_ID_KEY);
-  localStorage.removeItem(ISSUED_BONDS_KEY);
-  localStorage.removeItem(REGISTERED_BONDS_KEY);
-}
-
-// --- Issued Bonds (issuer perspective) ---
-
-const ISSUED_BONDS_KEY = "iptf-bonds-issued";
-
-export interface IssuedBond {
-  contractAddress: string;
-  name: string;
-  totalSupply: string;
-  maturityDate: string;
-  deployedAt: string;
-}
-
-export function loadIssuedBonds(): IssuedBond[] {
-  const raw = localStorage.getItem(ISSUED_BONDS_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as IssuedBond[];
-  } catch {
-    return [];
-  }
-}
-
-export function saveIssuedBond(bond: IssuedBond) {
-  const existing = loadIssuedBonds();
-  existing.push(bond);
-  localStorage.setItem(ISSUED_BONDS_KEY, JSON.stringify(existing));
-}
-
-// --- Registered Bonds (holder perspective) ---
-
-const REGISTERED_BONDS_KEY = "iptf-bonds-registered";
-
-export interface RegisteredBond {
-  contractAddress: string;
-  issuerAddress: string;
-  bondName: string;
-  registeredAt: string;
-}
-
-export function loadRegisteredBonds(): RegisteredBond[] {
-  const raw = localStorage.getItem(REGISTERED_BONDS_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as RegisteredBond[];
-  } catch {
-    return [];
-  }
-}
-
-export function saveRegisteredBond(bond: RegisteredBond) {
-  const existing = loadRegisteredBonds();
-  if (existing.some(b => b.contractAddress === bond.contractAddress)) return;
-  existing.push(bond);
-  localStorage.setItem(REGISTERED_BONDS_KEY, JSON.stringify(existing));
 }

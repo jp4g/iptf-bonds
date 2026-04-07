@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@iptf/contracts": "workspace:*",
     "@aztec/accounts": "catalog:",
     "@aztec/aztec.js": "catalog:",
     "@aztec/constants": "catalog:",
@@ -20,12 +19,15 @@
     "@aztec/stdlib": "catalog:",
     "@aztec/wallet-sdk": "catalog:",
     "@iconify/react": "^6.0.2",
+    "@iptf/contracts": "workspace:*",
+    "better-sqlite3": "^12.8.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

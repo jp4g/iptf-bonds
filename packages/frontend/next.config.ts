@@ -3,6 +3,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['better-sqlite3'],
   typescript: {
     ignoreBuildErrors: true,
   },
