@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, runInTransaction } from "@/lib/db";
 
 export async function POST(
   request: NextRequest,
@@ -17,10 +17,10 @@ export async function POST(
     VALUES (?, ?, ?, ?)
   `);
 
-  db.transaction(() => {
+  runInTransaction(() => {
     addToBook.run(bondAddress, data.holderAddress, data.label ?? null);
     addToRegistered.run(data.holderAddress, bondAddress, data.issuerAddress, data.bondName);
-  })();
+  });
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
@@ -39,10 +39,10 @@ export async function DELETE(
     DELETE FROM registered_bonds WHERE bond_contract_address = ? AND holder_address = ?
   `);
 
-  db.transaction(() => {
+  runInTransaction(() => {
     removeFromBook.run(bondAddress, data.holderAddress);
     removeFromRegistered.run(bondAddress, data.holderAddress);
-  })();
+  });
 
   return NextResponse.json({ ok: true });
 }

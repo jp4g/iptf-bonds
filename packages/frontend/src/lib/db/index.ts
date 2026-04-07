@@ -1,26 +1,27 @@
-import Database from "better-sqlite3";
+import { existsSync, mkdirSync } from "fs";
 import path from "path";
+import { DatabaseSync } from "node:sqlite";
 
 const DB_PATH = path.join(process.cwd(), "data", "iptf-bonds.db");
 
-let db: Database.Database | null = null;
+let db: DatabaseSync | null = null;
 
-export function getDb(): Database.Database {
-  if (db) return db;
-
-  // Ensure data directory exists
-  const fs = require("fs");
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+export function getDb(): DatabaseSync {
+  if (db !== null) {
+    return db;
   }
 
-  db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
+  const dataDirectory = path.dirname(DB_PATH);
+  const dataDirectoryIsMissing = !existsSync(dataDirectory);
+  if (dataDirectoryIsMissing) {
+    mkdirSync(dataDirectory, { recursive: true });
+  }
 
-  // Initialize schema
-  db.exec(`
+  const database = new DatabaseSync(DB_PATH);
+  database.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
+
     CREATE TABLE IF NOT EXISTS issued_bonds (
       contract_address TEXT PRIMARY KEY,
       issuer_address   TEXT NOT NULL,
@@ -51,5 +52,20 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_address_book_bond ON address_book(bond_contract_address);
   `);
 
-  return db;
+  db = database;
+  return database;
+}
+
+export function runInTransaction(work: () => void): void {
+  const database = getDb();
+
+  database.exec("BEGIN");
+
+  try {
+    work();
+    database.exec("COMMIT");
+  } catch (error) {
+    database.exec("ROLLBACK");
+    throw error;
+  }
 }
