@@ -1,3 +1,5 @@
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
 import { createClient, type Client } from "@libsql/client";
 
 let client: Client | null = null;
@@ -7,12 +9,37 @@ export async function getDb(): Promise<Client> {
   if (client && initialized) return client;
 
   if (!client) {
-    const url = process.env.TURSO_DATABASE_URL;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
-    if (!url) throw new Error("TURSO_DATABASE_URL is not set");
-    if (!authToken) throw new Error("TURSO_AUTH_TOKEN is not set");
+    const configuredDatabaseUrl = process.env.TURSO_DATABASE_URL?.trim();
+    const configuredAuthToken = process.env.TURSO_AUTH_TOKEN?.trim();
+    const databaseUrlIsConfigured = configuredDatabaseUrl !== undefined && configuredDatabaseUrl !== "";
 
-    client = createClient({ url, authToken });
+    if (databaseUrlIsConfigured) {
+      const databaseUsesRemoteTurso =
+        configuredDatabaseUrl.startsWith("libsql://") || configuredDatabaseUrl.startsWith("https://");
+      const authTokenIsConfigured = configuredAuthToken !== undefined && configuredAuthToken !== "";
+
+      if (databaseUsesRemoteTurso && !authTokenIsConfigured) {
+        throw new Error("TURSO_AUTH_TOKEN is not set");
+      }
+
+      client = createClient({
+        url: configuredDatabaseUrl,
+        authToken: authTokenIsConfigured ? configuredAuthToken : undefined,
+      });
+    } else {
+      const isProductionEnvironment = process.env.NODE_ENV === "production";
+      if (isProductionEnvironment) {
+        throw new Error("TURSO_DATABASE_URL is not set");
+      }
+
+      const localDatabaseDirectory = path.join(process.cwd(), "data");
+      const localDatabasePath = path.join(localDatabaseDirectory, "iptf-bonds.db");
+
+      await mkdir(localDatabaseDirectory, { recursive: true });
+
+      // Local development can persist to a SQLite file without Turso credentials.
+      client = createClient({ url: `file:${localDatabasePath}` });
+    }
   }
 
   if (!initialized) {
