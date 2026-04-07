@@ -4,14 +4,12 @@
   "description": "Order flow service for IPTF Private Bonds",
   "main": "src/index.ts",
   "scripts": {
-    "start": "bun run src/index.ts",
-    "dev": "bun run --watch src/index.ts",
-    "test": "bun test"
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
 }

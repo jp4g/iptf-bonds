@@ -14,9 +14,9 @@
   "scripts": {
     "compile": "cd contracts && aztec compile --workspace",
     "codegen": "cd contracts && aztec codegen target --outdir ../ts/src/artifacts -f",
-    "copy-artifacts": "bun run scripts/add_artifacts.ts",
-    "build": "bun run compile && bun run codegen && bun run copy-artifacts",
-    "test": "bun test"
+    "copy-artifacts": "tsx scripts/add_artifacts.ts",
+    "build": "pnpm run compile && pnpm run codegen && pnpm run copy-artifacts",
+    "test": "node --test ts/test/*.test.ts"
   },
   "dependencies": {
     "@aztec/aztec.js": "catalog:",
@@ -31,7 +31,6 @@
     "@aztec/wallets": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",

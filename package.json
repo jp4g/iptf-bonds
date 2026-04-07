@@ -2,11 +2,14 @@
   "name": "@iptf/bonds",
   "private": true,
   "scripts": {
-    "postinstall": "bun run scripts/token.ts",
-    "test": "bun test"
+    "postinstall": "tsx scripts/token.ts",
+    "test": "echo no root tests"
   },
   "config": {
     "aztecVersion": "4.2.0-aztecnr-rc.2",
     "aztecStandardsVersion": "dev"
+  },
+  "devDependencies": {
+    "tsx": "catalog:"
   }
 }

@@ -1,11 +1,15 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 
-import { spawn } from "bun";
-import { existsSync } from "fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "fs";
 import { writeFile } from "fs/promises";
 import { readFile } from "fs/promises";
 import { mkdir, rm } from "fs/promises";
-import { config } from "../package.json" with { type: "json" };
+import { dirname, join } from "path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const { config } = JSON.parse(readFileSync(join(dirname(__filename), "../package.json"), "utf-8"));
 
 interface ScriptOptions {
   skipSubmodules: boolean;
@@ -40,17 +44,11 @@ async function replaceInFile(filePath: string, searchText: string, replaceText: 
   }
 }
 
-async function execCommand(command: string, args: string[] = [], cwd?: string) {
-  const proc = spawn({
-    cmd: [command, ...args],
-    cwd,
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
-  const exitCode = await proc.exited;
-  if (exitCode !== 0) {
-    throw new Error(`Command failed: ${command} ${args.join(' ')} (exit code: ${exitCode})`);
+function execCommand(command: string, args: string[] = [], cwd?: string) {
+  try {
+    execFileSync(command, args, { cwd, stdio: "inherit" });
+  } catch {
+    throw new Error(`Command failed: ${command} ${args.join(' ')}`);
   }
 }
 
@@ -60,11 +58,11 @@ async function main() {
   try {
     if (!options.skipSubmodules) {
       console.log("Updating git submodules...");
-      await execCommand("git", ["submodule", "update", "--init", "--recursive", "--remote"]);
+      execCommand("git", ["submodule", "update", "--init", "--recursive", "--remote"]);
       console.log("Fetching tags in aztec-standards...");
-      await execCommand("git", ["fetch", "--tags"], "deps/aztec-standards");
+      execCommand("git", ["fetch", "--tags"], "deps/aztec-standards");
       console.log("Checking out aztec-standards...");
-      await execCommand("git", ["checkout", config.aztecStandardsVersion], "deps/aztec-standards");
+      execCommand("git", ["checkout", config.aztecStandardsVersion], "deps/aztec-standards");
     } else {
       console.log("Skipping submodule update, removing target directory...");
       const targetPath = "deps/aztec-standards/target";
@@ -74,10 +72,10 @@ async function main() {
     }
 
     console.log("Compiling token contract...");
-    await execCommand("aztec", ["compile", "--package", "token_contract"], "deps/aztec-standards");
+    execCommand("aztec", ["compile", "--package", "token_contract"], "deps/aztec-standards");
 
     console.log("Generating TypeScript bindings...");
-    await execCommand("aztec", [
+    execCommand("aztec", [
       "codegen",
       "./target/token_contract-Token.json",
       "-o", "./target",
@@ -91,12 +89,12 @@ async function main() {
     }
 
     console.log("Copying token artifacts to ts library...");
-    await execCommand("cp", [
+    execCommand("cp", [
       "./target/token_contract-Token.json",
       `../../${tokenArtifactDir}/Token.json`
     ], "deps/aztec-standards");
 
-    await execCommand("cp", [
+    execCommand("cp", [
       "./target/Token.ts",
       `../../${tokenArtifactDir}/Token.ts`
     ], "deps/aztec-standards");
@@ -114,7 +112,7 @@ async function main() {
       await mkdir(contractsTargetDir, { recursive: true });
     }
 
-    await execCommand("cp", [
+    execCommand("cp", [
       "./target/token_contract-Token.json",
       `../../${contractsTargetDir}/dvp_escrow-Token.json`
     ], "deps/aztec-standards");
@@ -127,6 +125,4 @@ async function main() {
   }
 }
 
-if (import.meta.main) {
-  main();
-}
+main();

@@ -4,7 +4,6 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "catalog:",
     "@types/jest": "catalog:",
     "@aztec/aztec.js": "catalog:",
     "@aztec/accounts": "catalog:",
@@ -13,6 +12,7 @@
     "@aztec/pxe": "catalog:",
     "@aztec/wallets": "catalog:",
     "@aztec/stdlib": "catalog:",
+    "@aztec/foundation": "catalog:",
     "@iptf/contracts": "workspace:*",
     "dotenv": "catalog:",
     "@jp4g/fpc-deployer": "0.2.0"
@@ -21,11 +21,11 @@
     "typescript": "catalog:"
   },
   "scripts": {
-    "setup:accounts": "bun run scripts/setup_accounts.ts",
-    "setup:deploy": "bun run scripts/deploy.ts",
-    "setup:issuer": "bun run scripts/setup_issuer.ts",
-    "escrow:create": "bun run scripts/create_escrow.ts",
-    "escrow:settle": "bun run scripts/settle_escrow.ts",
-    "balances": "bun run scripts/print_balances.ts"
+    "setup:accounts": "tsx scripts/setup_accounts.ts",
+    "setup:deploy": "tsx scripts/deploy.ts",
+    "setup:issuer": "tsx scripts/setup_issuer.ts",
+    "escrow:create": "tsx scripts/create_escrow.ts",
+    "escrow:settle": "tsx scripts/settle_escrow.ts",
+    "balances": "tsx scripts/print_balances.ts"
   }
 }

@@ -1,7 +1,8 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 
 import { copyFile, readFile, writeFile, mkdir } from "fs/promises";
 import { dirname, join } from "path";
+import { fileURLToPath } from "node:url";
 
 async function copyFileWithLog(src: string, dest: string): Promise<void> {
   try {
@@ -25,7 +26,7 @@ async function replaceInFile(filePath: string, searchText: string, replaceText: 
 
 async function main() {
   try {
-    const scriptDir = dirname(import.meta.path);
+    const scriptDir = dirname(fileURLToPath(import.meta.url));
     const rootDir = join(scriptDir, "..");
 
     console.log(`Working in project directory: ${rootDir}`);
@@ -67,6 +68,4 @@ async function main() {
   }
 }
 
-if (import.meta.main) {
-  main();
-}
+main();
