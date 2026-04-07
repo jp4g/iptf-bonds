@@ -72,28 +72,17 @@ pub contract DvPEscrowStub {
         // -------------------------------------------------------------------
 
         // Step 1: Create a partial note for the payment token
-        //
-        //   Call Token::at(payment_token_address).initialize_transfer_commitment(...)
-        //   passing the buyer (self.msg_sender()) and the escrow (self.address)
-        //   Use self.call(...) to make the cross-contract call
-        //   Store the result in `partial_note`
-        //
-        //   Hint: let partial_note = self.call(Token::at(payment_token_address)
-        //             .initialize_transfer_commitment(self.msg_sender(), self.address));
+        //   TODO: call Token::at(payment_token_address)
+        //             .initialize_transfer_commitment(self.msg_sender(), self.address)
+        //         via self.call(...) and store the result in `partial_note`
+        let partial_note = // TODO
 
 
         // Step 2: Create a ConfigNote with all deal parameters
-        //
-        //   Call ConfigNote::new(...) with:
-        //     - self.address (the escrow is the note owner)
-        //     - partial_note (from step 1)
-        //     - bond_address, bond_amount
-        //     - payment_token_address, payment_amount
-        //
-        //   Hint: let config = ConfigNote::new(
-        //             self.address, partial_note,
+        //   TODO: call ConfigNote::new(self.address, partial_note,
         //             bond_address, bond_amount,
-        //             payment_token_address, payment_amount);
+        //             payment_token_address, payment_amount)
+        let config = // TODO
 
 
         // -------------------------------------------------------------------
@@ -110,11 +99,7 @@ pub contract DvPEscrowStub {
         // -------------------------------------------------------------------
 
         // Step 3: Initialize storage and deliver the note
-        //
-        //   Use self.storage.config.initialize(config)
-        //   Chain .deliver(MessageDelivery.ONCHAIN_CONSTRAINED) to publish it
-        //
-        //   Hint: self.storage.config
+        //   TODO: self.storage.config
         //             .initialize(config)
         //             .deliver(MessageDelivery.ONCHAIN_CONSTRAINED);
     }
@@ -131,9 +116,8 @@ pub contract DvPEscrowStub {
     fn lock_delivery(_nonce: Field) {
 
         // Step 1: Read the config note from storage
-        //
-        //   Hint: let config = self.storage.config.get_note();
-
+        let config = // TODO: self.storage.config.get_note()
+        let caller = self.msg_sender();
 
         // -------------------------------------------------------------------
         // CONCEPT: Authorization Witnesses (Authwits)
@@ -154,13 +138,7 @@ pub contract DvPEscrowStub {
         // -------------------------------------------------------------------
 
         // Step 2: Transfer bonds from seller to escrow
-        //
-        //   Call PrivateBonds::at(config.bond_address).transfer_from(...)
-        //   passing: caller (self.msg_sender()), escrow (self.address),
-        //            config.bond_amount, and _nonce
-        //   Use self.call(...) for cross-contract calls
-        //
-        //   Hint: self.call(PrivateBonds::at(config.bond_address)
+        //   TODO: self.call(PrivateBonds::at(config.bond_address)
         //             .transfer_from(caller, self.address, config.bond_amount, _nonce));
 
 
@@ -180,11 +158,7 @@ pub contract DvPEscrowStub {
         // -------------------------------------------------------------------
 
         // Step 3: Emit a deposit nullifier to prevent double-deposits
-        //
-        //   Get the nullifier: config.get_nullifier(true)  -- true = deposit phase
-        //   Push it: self.context.push_nullifier(deposit_nullifier)
-        //
-        //   Hint: let deposit_nullifier = self.storage.config.get_note().get_nullifier(true);
+        //   TODO: let deposit_nullifier = self.storage.config.get_note().get_nullifier(true);
         //         self.context.push_nullifier(deposit_nullifier);
     }
 
@@ -204,48 +178,28 @@ pub contract DvPEscrowStub {
     fn settle(_nonce: Field) {
 
         // Step 1: Read the config note from storage
-        //
-        //   Hint: let config = self.storage.config.get_note();
-
+        let config = // TODO: self.storage.config.get_note()
+        let caller = self.msg_sender();
 
         // Step 2: Transfer payment tokens from buyer to escrow
-        //
-        //   Call Token::at(config.payment_token_address)
-        //       .transfer_private_to_private(...)
-        //   passing: caller, escrow, payment_amount, _nonce
-        //
-        //   Hint: self.call(Token::at(config.payment_token_address)
+        //   TODO: self.call(Token::at(config.payment_token_address)
         //             .transfer_private_to_private(
         //                 caller, self.address, config.payment_amount, _nonce));
 
 
         // Step 3: Finalize the partial note -- buyer's payment goes to the seller
-        //
         //   This "completes" the partial note created in the constructor.
-        //   Call Token::at(config.payment_token_address)
-        //       .transfer_private_to_commitment(...)
-        //   passing: escrow (self.address), config.partial_note,
-        //            config.payment_amount, 0 (nonce)
-        //
-        //   Hint: self.call(Token::at(config.payment_token_address)
+        //   TODO: self.call(Token::at(config.payment_token_address)
         //             .transfer_private_to_commitment(
         //                 self.address, config.partial_note,
         //                 config.payment_amount, 0));
 
 
         // Step 4: Transfer bonds from escrow to buyer + emit fill nullifier
-        //
-        //   a) Transfer bonds: PrivateBonds::at(config.bond_address)
-        //          .transfer_from(escrow, caller, bond_amount, 0)
-        //
-        //   b) Emit fill nullifier: config.get_nullifier(false) -- false = fill phase
-        //      Push it with self.context.push_nullifier(...)
-        //
-        //   Hint:
-        //     self.call(PrivateBonds::at(config.bond_address)
-        //         .transfer_from(self.address, caller, config.bond_amount, 0));
-        //     let fill_nullifier = config.get_nullifier(false);
-        //     self.context.push_nullifier(fill_nullifier);
+        //   a) TODO: self.call(PrivateBonds::at(config.bond_address)
+        //                .transfer_from(self.address, caller, config.bond_amount, 0));
+        //   b) TODO: let fill_nullifier = config.get_nullifier(false);
+        //            self.context.push_nullifier(fill_nullifier);
     }
 
 
@@ -264,13 +218,8 @@ pub contract DvPEscrowStub {
     // this as a utility function that clients can call to inspect state.
     // -------------------------------------------------------------------
 
-    // Step 1: Implement get_config
-    //
-    //   Use self.storage.config.view_note() to read the config note
-    //   This is a simple one-liner!
-    //
-    //   Hint: #[external("utility")]
-    //         unconstrained fn get_config() -> ConfigNote {
-    //             self.storage.config.view_note()
-    //         }
+    #[external("utility")]
+    unconstrained fn get_config() -> ConfigNote {
+        // TODO: self.storage.config.view_note()
+    }
 }
