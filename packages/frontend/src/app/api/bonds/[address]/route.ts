@@ -6,12 +6,14 @@ export async function GET(
   { params }: { params: Promise<{ address: string }> }
 ) {
   const { address } = await params;
-  const db = getDb();
-  const bond = db.prepare(`
-    SELECT contract_address, issuer_address, name, total_supply, maturity_date, deployed_at
-    FROM issued_bonds WHERE contract_address = ?
-  `).get(address);
+  const db = await getDb();
+  const result = await db.execute({
+    sql: `SELECT contract_address, issuer_address, name, total_supply, maturity_date, deployed_block, deployed_at
+          FROM issued_bonds WHERE contract_address = ?`,
+    args: [address],
+  });
 
+  const bond = result.rows[0];
   if (!bond) {
     return NextResponse.json({ error: "Bond not found" }, { status: 404 });
   }
