@@ -1,6 +1,6 @@
 # IPTF Bonds
 
-Private bond demo on Aztec.
+Private bonds demo on Aztec.
 
 ## Minimal Runbook
 
