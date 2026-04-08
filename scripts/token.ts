@@ -58,6 +58,7 @@ async function main() {
   try {
     if (!options.skipSubmodules) {
       console.log("Updating git submodules...");
+      execCommand("git", ["submodule", "sync", "--recursive"]);
       execCommand("git", ["submodule", "update", "--init", "--recursive", "--remote"]);
       console.log("Fetching tags in aztec-standards...");
       execCommand("git", ["fetch", "--tags"], "deps/aztec-standards");
